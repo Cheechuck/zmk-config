@@ -1,0 +1,3 @@
+# Defines the shield name "leptir" used in build.yaml.
+config SHIELD_LEPTIR
+    def_bool $(shields_list_contains,leptir)

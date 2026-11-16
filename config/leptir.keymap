@@ -1,0 +1,447 @@
+/*
+ * config/leptir.keymap
+ * Leptir: 8-key chorded keyboard. Target: ZMK v0.3, Windows 11 "Serbian (Latin)".
+ *
+ * Key positions (set by the order in leptir.overlay):
+ *   0 = SW1 (left ring)   1 = SW2   2 = SW3   3 = SW4
+ *   4 = SW5               5 = SW6   6 = SW7   7 = SW8 (right ring)
+ */
+
+#include <behaviors.dtsi>
+#include <dt-bindings/zmk/keys.h>
+#include <dt-bindings/zmk/bt.h>
+
+/* ======================================================================
+ * 1. TIMING SETTINGS - change these numbers, save, and the firmware rebuilds.
+ *    All values are milliseconds (1000 = one second).
+ * ====================================================================== */
+
+/* All keys of a chord must go down within this time. Raise it if chords
+ * break up into single letters; lower it if typing feels slow. */
+#define CHORD_MS       50
+
+/* Same, for chords pressed TOGETHER with a ring finger (SW1/SW8). Kept
+ * shorter so "e" followed quickly by Space does not turn into "E". */
+#define RING_MS        40
+
+/* Hold a ring finger alone this long and it becomes a layer key, so you can
+ * type several capitals or digits without re-pressing it. A shorter press
+ * is a plain Space / Backspace. */
+#define RING_HOLD_MS   150
+
+/* Tap a ring finger, then press and hold it again within this time, and the
+ * Space / Backspace auto-repeats instead of becoming a layer key. */
+#define RING_REPEAT_MS 200
+
+/* How long an armed one-shot (Ctrl, Shift, Alt, Win, Fn) waits for the next
+ * chord before it gives up. */
+#define ONESHOT_MS     60000
+
+/* How long the six mode-switch keys must be held. */
+#define MODE_HOLD_MS   5000
+
+/* ======================================================================
+ * 2. NAMES - key positions and layers
+ * ====================================================================== */
+
+#define SW1 0 /* SW1, left ring  */
+#define SW2 1 /* SW2 */
+#define SW3 2 /* SW3 */
+#define SW4 3 /* SW4 */
+#define SW5 4 /* SW5 */
+#define SW6 5 /* SW6 */
+#define SW7 6 /* SW7 */
+#define SW8 7 /* SW8, right ring */
+
+/* Layers. A layer is a full set of key meanings; the highest active one wins. */
+#define L_BASE 0  /* typing mode, nothing held                    */
+#define L_FN   1  /* "Fn armed" flag, set by the Fn one-shot      */
+#define L_CAPS 2  /* SW8 held                                     */
+#define L_SYM  3  /* SW1 held                                     */
+#define L_FNS  4  /* Fn armed and SW1 held: digits become F-keys  */
+#define L_CMB  5  /* SW1 and SW8 held (switched on automatically) */
+#define L_GAME 6  /* game mode                                    */
+#define L_G1   7  /* game helpers: "this key is down" flags       */
+#define L_G2   8
+#define L_G3   9
+#define L_G4   10
+#define L_G5   11
+#define L_G6   12
+#define L_X1   13 /* game helpers: "the other five are down"      */
+#define L_X2   14
+#define L_X3   15
+#define L_X4   16
+#define L_X5   17
+#define L_X6   18
+
+/* ======================================================================
+ * 3. SERBIAN (LATIN) LAYOUT
+ *    A keyboard sends key POSITIONS, and Windows turns them into characters.
+ *    These names say which US-position key yields each character under
+ *    the Windows "Serbian (Latin)" layout. LS() = with Shift, RA() = with AltGr.
+ * ====================================================================== */
+
+#define SR_Y       Z               /* y and z are swapped (QWERTZ) */
+#define SR_Z       Y
+#define SR_SH      LBKT            /* š */
+#define SR_DJ      RBKT            /* đ */
+#define SR_CH      SEMI            /* č */
+#define SR_CC      SQT             /* ć */
+#define SR_ZH      BSLH            /* ž */
+#define SR_DOT     DOT
+#define SR_COLON   LS(DOT)
+#define SR_COMMA   COMMA
+#define SR_SEMI    LS(COMMA)
+#define SR_QMARK   LS(MINUS)
+#define SR_EXCL    LS(N1)
+#define SR_EQUAL   LS(N0)
+#define SR_PLUS    EQUAL
+#define SR_STAR    LS(EQUAL)
+#define SR_MINUS   FSLH
+#define SR_UNDER   LS(FSLH)
+#define SR_SLASH   LS(N7)
+#define SR_APOS    MINUS
+#define SR_DQUOTE  LS(N2)
+#define SR_AMP     LS(N6)
+#define SR_DOLLAR  LS(N4)
+#define SR_PERCENT LS(N5)
+#define SR_HASH    LS(N3)
+#define SR_LPAR    LS(N8)
+#define SR_RPAR    LS(N9)
+#define SR_LT      NON_US_BSLH
+#define SR_GT      LS(NON_US_BSLH)
+#define SR_LBRACE  RA(B)
+#define SR_RBRACE  RA(N)
+#define SR_LBRKT   RA(F)
+#define SR_RBRKT   RA(G)
+#define SR_AT      RA(V)
+#define SR_PIPE    RA(W)
+#define SR_BSLASH  RA(Q)
+#define SR_EURO    RA(E)
+#define SR_TILDE   RA(N1)
+#define SR_GRAVE   RA(N7)
+#define SR_CARET   RA(N3)          /* a "dead key": needs a Space after it */
+
+/* ======================================================================
+ * 4. COMBO GENERATORS
+ *    One line per row of the chord table expands into every way of
+ *    pressing it: all at once, or with a ring finger already held.
+ *    You should not need to edit this section.
+ * ====================================================================== */
+
+#define COMBO(NAME, BIND, KEYS, LAYERS, TERM) \
+    combo_##NAME { timeout-ms = <TERM>; key-positions = <KEYS>; layers = <LAYERS>; bindings = <BIND>; };
+
+/* Chord of two or more keys.  B = base, C = +SW8, S = +SW1, X = +SW1+SW8 */
+#define CHORD(NAME, KEYS, B, C, S, X) \
+    COMBO(NAME##_b,   B, KEYS,       L_BASE L_FN,  CHORD_MS) \
+    COMBO(NAME##_c,   C, KEYS SW8,    L_BASE L_FN,  RING_MS)  \
+    COMBO(NAME##_s,   S, SW1 KEYS,    L_BASE L_FN,  RING_MS)  \
+    COMBO(NAME##_x,   X, SW1 KEYS SW8, L_BASE L_FN,  RING_MS)  \
+    COMBO(NAME##_hc,  C, KEYS,       L_CAPS,     CHORD_MS) \
+    COMBO(NAME##_hcx, X, SW1 KEYS,    L_CAPS,     RING_MS)  \
+    COMBO(NAME##_hs,  S, KEYS,       L_SYM L_FNS,  CHORD_MS) \
+    COMBO(NAME##_hsx, X, KEYS SW8,    L_SYM L_FNS,  RING_MS)  \
+    COMBO(NAME##_hx,  X, KEYS,       L_CMB,      CHORD_MS)
+
+/* Same, for chords whose +SW1 output is a digit 1-9.
+ * F = the F-key used instead of the digit while Fn is armed.
+ * XF = the +SW1+SW8 output while Fn is armed. */
+#define CHORD_D(NAME, KEYS, B, C, S, F, X, XF) \
+    COMBO(NAME##_b,    B,  KEYS,       L_BASE L_FN, CHORD_MS) \
+    COMBO(NAME##_c,    C,  KEYS SW8,    L_BASE L_FN, RING_MS)  \
+    COMBO(NAME##_s,    S,  SW1 KEYS,    L_BASE,    RING_MS)  \
+    COMBO(NAME##_sf,   F,  SW1 KEYS,    L_FN,      RING_MS)  \
+    COMBO(NAME##_x,    X,  SW1 KEYS SW8, L_BASE,    RING_MS)  \
+    COMBO(NAME##_xf,   XF, SW1 KEYS SW8, L_FN,      RING_MS)  \
+    COMBO(NAME##_hc,   C,  KEYS,       L_CAPS,    CHORD_MS) \
+    COMBO(NAME##_hcx,  X,  SW1 KEYS,    L_CAPS,    RING_MS)  \
+    COMBO(NAME##_hs,   S,  KEYS,       L_SYM,     CHORD_MS) \
+    COMBO(NAME##_hsf,  F,  KEYS,       L_FNS,     CHORD_MS) \
+    COMBO(NAME##_hsx,  X,  KEYS SW8,    L_SYM,     RING_MS)  \
+    COMBO(NAME##_hsxf, XF, KEYS SW8,    L_FNS,     RING_MS)  \
+    COMBO(NAME##_hx,   X,  KEYS,       L_CMB,     CHORD_MS)
+
+/* Single key plus ring finger(s). The key on its own lives in the keymap
+ * section at the bottom. S is always a digit here, F its F-key. */
+#define SINGLE(NAME, KEY, C, S, F, X) \
+    COMBO(NAME##_c,   C, KEY SW8,    L_BASE L_FN, RING_MS) \
+    COMBO(NAME##_s,   S, SW1 KEY,    L_BASE,    RING_MS) \
+    COMBO(NAME##_sf,  F, SW1 KEY,    L_FN,      RING_MS) \
+    COMBO(NAME##_x,   X, SW1 KEY SW8, L_BASE L_FN, RING_MS) \
+    COMBO(NAME##_hcx, X, SW1 KEY,    L_CAPS,    RING_MS) \
+    COMBO(NAME##_hsx, X, KEY SW8,    L_SYM L_FNS, RING_MS)
+
+/* Head of a macro definition (kept separate because of the '#' character). */
+#define MACRO0 compatible = "zmk,behavior-macro"; #binding-cells = <0>;
+/* Added to game-key macros so they act with no built-in delay. */
+#define FAST   wait-ms = <0>; tap-ms = <0>;
+
+/* A game key that must take part in the 5-second exit hold.
+ * NAME   : normal version = the key, plus a "this key is down" flag layer.
+ * NAME_x : version used when the other five are already down; it also
+ *          starts the 5-second timer. */
+#define GAME_KEY(NAME, KEY, FLAG) \
+    NAME: NAME { MACRO0 FAST \
+        bindings = <&macro_press &kp KEY &mo FLAG>, <&macro_pause_for_release>, <&macro_release &kp KEY &mo FLAG>; }; \
+    NAME##_x: NAME##_x { MACRO0 FAST \
+        bindings = <&macro_press &kp KEY &mo FLAG &ht_exit 0 0>, <&macro_pause_for_release>, <&macro_release &kp KEY &mo FLAG &ht_exit 0 0>; };
+
+/ {
+    /* ==================================================================
+     * 5. BEHAVIORS - the building blocks used by the chord table
+     * ================================================================== */
+    behaviors {
+        /* Ring-finger key: tap = a key (Space/Backspace/Tab), hold = a layer. */
+        ring: ring {
+            compatible = "zmk,behavior-hold-tap";
+            #binding-cells = <2>;
+            flavor = "tap-preferred";
+            tapping-term-ms = <RING_HOLD_MS>;
+            quick-tap-ms = <RING_REPEAT_MS>;
+            bindings = <&mo>, <&kp>;
+        };
+
+        /* One-shot modifier: stays down until the next chord. They stack. */
+        osm: osm {
+            compatible = "zmk,behavior-sticky-key";
+            #binding-cells = <1>;
+            release-after-ms = <ONESHOT_MS>;
+            quick-release;
+            ignore-modifiers;
+            bindings = <&kp>;
+        };
+
+        /* One-shot layer, used for Fn. */
+        osl: osl {
+            compatible = "zmk,behavior-sticky-key";
+            #binding-cells = <1>;
+            release-after-ms = <ONESHOT_MS>;
+            quick-release;
+            ignore-modifiers; /* so Fn can be stacked with Ctrl/Shift/Alt/Win */
+            bindings = <&mo>;
+        };
+
+        /* One-shot chords. First press arms the modifier. Pressing the same
+         * chord again while it is armed runs the cancel macro instead. */
+        os_ctrl: os_ctrl {
+            compatible = "zmk,behavior-mod-morph";
+            #binding-cells = <0>;
+            bindings = <&osm LCTRL>, <&osx_ctrl>;
+            mods = <(MOD_LCTL)>;
+            keep-mods = <(MOD_LCTL)>;
+        };
+        os_shift: os_shift {
+            compatible = "zmk,behavior-mod-morph";
+            #binding-cells = <0>;
+            bindings = <&osm LSHFT>, <&osx_shift>;
+            mods = <(MOD_LSFT)>;
+            keep-mods = <(MOD_LSFT)>;
+        };
+        os_alt: os_alt {
+            compatible = "zmk,behavior-mod-morph";
+            #binding-cells = <0>;
+            bindings = <&osm LALT>, <&osx_alt>;
+            mods = <(MOD_LALT)>;
+            keep-mods = <(MOD_LALT)>;
+        };
+        os_win: os_win {
+            compatible = "zmk,behavior-mod-morph";
+            #binding-cells = <0>;
+            bindings = <&osm LGUI>, <&osx_win>;
+            mods = <(MOD_LGUI)>;
+            keep-mods = <(MOD_LGUI)>;
+        };
+
+        /* Typing -> game: fires "go to L_GAME layer" only after MODE_HOLD_MS.
+         * A shorter press does nothing. */
+        ht_game: ht_game {
+            compatible = "zmk,behavior-hold-tap";
+            #binding-cells = <2>;
+            flavor = "tap-preferred";
+            tapping-term-ms = <MODE_HOLD_MS>;
+            bindings = <&to>, <&none>;
+        };
+
+        /* Game -> typing: fires the exit macro only after MODE_HOLD_MS. */
+        ht_exit: ht_exit {
+            compatible = "zmk,behavior-hold-tap";
+            #binding-cells = <2>;
+            flavor = "tap-preferred";
+            tapping-term-ms = <MODE_HOLD_MS>;
+            bindings = <&exit_game>, <&none>;
+        };
+    };
+
+    macros {
+        /* Cancel macros: let go of the armed modifier.
+         * For Win this is exactly "a plain tap of the Windows key". */
+        osx_ctrl:  osx_ctrl  { MACRO0 bindings = <&macro_release &kp LCTRL>; };
+        osx_shift: osx_shift { MACRO0 bindings = <&macro_release &kp LSHFT>; };
+        osx_win:   osx_win   { MACRO0 bindings = <&macro_release &kp LGUI>; };
+        /* Alt released alone would open the window menu, so tap Ctrl first. */
+        osx_alt:   osx_alt   { MACRO0 bindings = <&macro_tap &kp LCTRL>, <&macro_release &kp LALT>; };
+
+        /* ^ is a dead key on the Serbian layout: AltGr+3, then Space. */
+        caret: caret { MACRO0 bindings = <&macro_tap &kp SR_CARET &kp SPACE>; };
+
+        /* Leave game mode: release every game key, then go back to typing. */
+        exit_game: exit_game { MACRO0 FAST
+            bindings = <&macro_release &kp LEFT &kp RIGHT &kp UP &kp DOWN &kp X &kp A &kp B &kp SR_Y>, <&macro_tap &to L_BASE>; };
+
+        /* The six game keys that take part in the exit hold. */
+        GAME_KEY(g_left,  LEFT,  L_G1)
+        GAME_KEY(g_right, RIGHT, L_G2)
+        GAME_KEY(g_down,  DOWN,  L_G3)
+        GAME_KEY(g_x,     X,     L_G4)
+        GAME_KEY(g_b,     B,     L_G5)
+        GAME_KEY(g_y,     SR_Y,  L_G6)
+    };
+
+    /* ==================================================================
+     * 6. AUTOMATIC LAYERS
+     * ================================================================== */
+    conditional_layers {
+        compatible = "zmk,conditional-layers";
+        /* Both ring fingers held -> combo layer. */
+        cmb  { if-layers = <L_CAPS L_SYM>; then-layer = <L_CMB>; };
+        /* Fn armed and SW1 held -> F-key layer. */
+        fns  { if-layers = <L_FN L_SYM>;   then-layer = <L_FNS>; };
+        /* Game mode: five of the six exit keys are down -> arm the sixth. */
+        x1   { if-layers = <L_G2 L_G3 L_G4 L_G5 L_G6>; then-layer = <L_X1>; };
+        x2   { if-layers = <L_G1 L_G3 L_G4 L_G5 L_G6>; then-layer = <L_X2>; };
+        x3   { if-layers = <L_G1 L_G2 L_G4 L_G5 L_G6>; then-layer = <L_X3>; };
+        x4   { if-layers = <L_G1 L_G2 L_G3 L_G5 L_G6>; then-layer = <L_X4>; };
+        x5   { if-layers = <L_G1 L_G2 L_G3 L_G4 L_G6>; then-layer = <L_X5>; };
+        x6   { if-layers = <L_G1 L_G2 L_G3 L_G4 L_G5>; then-layer = <L_X6>; };
+    };
+
+    /* ==================================================================
+     * 7. THE CHORD TABLE
+     *    Columns: name, core keys, base, +SW8, +SW1, [F-key,] +SW1+SW8
+     *    &none = "(unused)": the chord is swallowed and sends nothing.
+     * ================================================================== */
+    combos {
+        compatible = "zmk,combos";
+
+        /* ---- ring fingers only: SW1+SW8 = Tab ---- */
+        COMBO(tab, &kp TAB, SW1 SW8, L_BASE L_FN, RING_MS)
+
+        /* ---- single keys with ring fingers (plain e a t o i n are in section 8) ---- */
+        /*     name  key  +SW8        +SW1    Fn+SW1   +SW1+SW8        */
+        SINGLE(e,    SW2,  &kp LS(E),  &kp N1, &kp F1,  &kp SR_LPAR)
+        SINGLE(a,    SW3,  &kp LS(A),  &kp N2, &kp F2,  &kp SR_LBRACE)
+        SINGLE(t,    SW4,  &kp LS(T),  &kp N3, &kp F3,  &kp SR_LBRKT)
+        SINGLE(o,    SW7,  &kp LS(O),  &kp N4, &kp F4,  &kp SR_RPAR)
+        SINGLE(i,    SW6,  &kp LS(I),  &kp N5, &kp F5,  &kp SR_RBRACE)
+        SINGLE(n,    SW5,  &kp LS(N),  &kp N6, &kp F6,  &kp SR_RBRKT)
+
+        /* ---- two-key chords ---- */
+        /*    name keys   base     +SW8        +SW1           +SW1+SW8        */
+        CHORD(s,   SW2 SW3, &kp S,   &kp LS(S),  &kp SR_DOT,    &kp SR_COLON)
+        CHORD(r,   SW6 SW7, &kp R,   &kp LS(R),  &kp SR_COMMA,  &kp SR_SEMI)
+        CHORD(l,   SW2 SW4, &kp L,   &kp LS(L),  &kp SR_QMARK,  &kp SR_LT)
+        CHORD(h,   SW5 SW7, &kp H,   &kp LS(H),  &kp SR_EXCL,   &kp SR_GT)
+        CHORD(c,   SW2 SW6, &kp C,   &kp LS(C),  &kp N0,        &kp SR_HASH)
+        CHORD(v,   SW3 SW7, &kp V,   &kp LS(V),  &kp SR_EQUAL,  &kp SR_AT)
+        CHORD(p,   SW3 SW5, &kp P,   &kp LS(P),  &kp SR_PLUS,   &kp SR_PIPE)
+        CHORD(k,   SW4 SW6, &kp K,   &kp LS(K),  &kp SR_MINUS,  &kp SR_UNDER)
+        CHORD(g,   SW2 SW5, &kp G,   &kp LS(G),  &kp SR_STAR,   &kp SR_PERCENT)
+        CHORD(j,   SW4 SW7, &kp J,   &kp LS(J),  &kp SR_SLASH,  &kp SR_BSLASH)
+
+        /* two-key chords whose +SW1 is a digit (7, 8, 9) */
+        /*      name keys   base    +SW8        +SW1    Fn+SW1  +SW1+SW8  same, Fn armed */
+        CHORD_D(u,   SW2 SW7, &kp U,  &kp LS(U),  &kp N7, &kp F7, &kp RET,  &kp RET)
+        CHORD_D(d,   SW3 SW6, &kp D,  &kp LS(D),  &kp N8, &kp F8, &kp ESC,  &kp ESC)
+        /* m: +SW1+SW8 arms Fn; pressed again while armed, it cancels Fn. */
+        CHORD_D(m,   SW4 SW5, &kp M,  &kp LS(M),  &kp N9, &kp F9, &osl L_FN,  &to L_BASE)
+
+        /* ---- three-key chords ---- */
+        /*    name keys      base        +SW8            +SW1            +SW1+SW8       */
+        CHORD(w,   SW2 SW3 SW7, &kp W,      &kp LS(W),      &kp SR_APOS,    &kp UP)
+        CHORD(b,   SW2 SW3 SW6, &kp B,      &kp LS(B),      &kp SR_AMP,     &kp DOWN)
+        CHORD(sh,  SW2 SW3 SW5, &kp SR_SH,  &kp LS(SR_SH),  &kp SR_DOLLAR,  &kp SR_EURO)
+        CHORD(z,   SW2 SW6 SW7, &kp SR_Z,   &kp LS(SR_Z),   &kp SR_DQUOTE,  &kp LEFT)
+        CHORD(f,   SW3 SW6 SW7, &kp F,      &kp LS(F),      &caret,         &kp RIGHT)
+        CHORD(y,   SW4 SW6 SW7, &kp SR_Y,   &kp LS(SR_Y),   &kp SR_TILDE,   &kp SR_GRAVE)
+        CHORD(cc,  SW2 SW4 SW7, &kp SR_CC,  &kp LS(SR_CC),  &kp END,        &kp F10)
+        CHORD(ch,  SW2 SW4 SW6, &kp SR_CH,  &kp LS(SR_CH),  &kp PG_UP,      &kp F11)
+        CHORD(x,   SW2 SW4 SW5, &kp X,      &kp LS(X),      &kp PG_DN,      &kp F12)
+        CHORD(zh,  SW2 SW5 SW7, &kp SR_ZH,  &kp LS(SR_ZH),  &kp HOME,       &none)
+        CHORD(dj,  SW3 SW5 SW7, &kp SR_DJ,  &kp LS(SR_DJ),  &kp DEL,        &none)
+        CHORD(q,   SW4 SW5 SW7, &kp Q,      &kp LS(Q),      &kp INS,        &none)
+
+        /* ---- four-key chords: one-shot modifiers ---- */
+        /*    name   keys         base       +SW8   +SW1   +SW1+SW8           */
+        CHORD(ctrl,  SW2 SW3 SW6 SW7, &os_ctrl,  &none, &none, &kp PSCRN)
+        CHORD(shift, SW2 SW4 SW5 SW7, &os_shift, &none, &none, &ht_game L_GAME 0)   /* mode switch */
+        /* EXTRAS, not in your table: two system chords on unused cells.
+         * Replace &bootloader / &bt BT_CLR with &none to remove them.
+         *   SW1+SW8 + Alt chord = bootloader (for flashing without tweezers)
+         *   SW1+SW8 + Win chord = forget the Bluetooth pairing            */
+        CHORD(alt,   SW2 SW4 SW6 SW7, &os_alt,   &none, &none, &bootloader)
+        CHORD(win,   SW2 SW3 SW5 SW7, &os_win,   &none, &none, &bt BT_CLR)
+    };
+
+    /* ==================================================================
+     * 8. LAYERS - what each key does on its own
+     *    Order in every row: SW1 SW2 SW3 SW4 SW5 SW6 SW7 SW8
+     *    &trans = "see-through": use the layer below.
+     *    display-name is the word shown on the nice!view.
+     * ================================================================== */
+    keymap {
+        compatible = "zmk,keymap";
+
+        base {
+            display-name = "abc";
+            bindings = <&ring L_SYM BSPC  &kp E  &kp A  &kp T  &kp N  &kp I  &kp O  &ring L_CAPS SPACE>;
+        };
+
+        fn {
+            display-name = "Fn";
+            bindings = <&trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans>;
+        };
+
+        caps {
+            display-name = "ABC";
+            bindings = <&ring L_SYM TAB  &kp LS(E)  &kp LS(A)  &kp LS(T)  &kp LS(N)  &kp LS(I)  &kp LS(O)  &trans>;
+        };
+
+        sym {
+            display-name = "123";
+            bindings = <&trans  &kp N1  &kp N2  &kp N3  &kp N6  &kp N5  &kp N4  &ring L_CAPS TAB>;
+        };
+
+        fns {
+            display-name = "Fn";
+            bindings = <&trans  &kp F1  &kp F2  &kp F3  &kp F6  &kp F5  &kp F4  &trans>;
+        };
+
+        cmb {
+            display-name = "({[";
+            bindings = <&trans  &kp SR_LPAR  &kp SR_LBRACE  &kp SR_LBRKT  &kp SR_RBRKT  &kp SR_RBRACE  &kp SR_RPAR  &trans>;
+        };
+
+        /* Game mode: no combos exist on this layer, so keys act instantly. */
+        game {
+            display-name = "fight";
+            bindings = <&g_left  &g_right  &kp UP  &g_down  &g_x  &kp A  &g_b  &g_y>;
+        };
+
+        /* Flag layers: empty on purpose. */
+        g1 { display-name = "fight"; bindings = <&trans &trans &trans &trans &trans &trans &trans &trans>; };
+        g2 { display-name = "fight"; bindings = <&trans &trans &trans &trans &trans &trans &trans &trans>; };
+        g3 { display-name = "fight"; bindings = <&trans &trans &trans &trans &trans &trans &trans &trans>; };
+        g4 { display-name = "fight"; bindings = <&trans &trans &trans &trans &trans &trans &trans &trans>; };
+        g5 { display-name = "fight"; bindings = <&trans &trans &trans &trans &trans &trans &trans &trans>; };
+        g6 { display-name = "fight"; bindings = <&trans &trans &trans &trans &trans &trans &trans &trans>; };
+
+        /* "Other five are down" layers: only the sixth key is changed. */
+        x1 { display-name = "fight"; bindings = <&g_left_x &trans &trans &trans &trans &trans &trans &trans>; };
+        x2 { display-name = "fight"; bindings = <&trans &g_right_x &trans &trans &trans &trans &trans &trans>; };
+        x3 { display-name = "fight"; bindings = <&trans &trans &trans &g_down_x &trans &trans &trans &trans>; };
+        x4 { display-name = "fight"; bindings = <&trans &trans &trans &trans &g_x_x &trans &trans &trans>; };
+        x5 { display-name = "fight"; bindings = <&trans &trans &trans &trans &trans &trans &g_b_x &trans>; };
+        x6 { display-name = "fight"; bindings = <&trans &trans &trans &trans &trans &trans &trans &g_y_x>; };
+    };
+};

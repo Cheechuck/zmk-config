@@ -1,0 +1,8 @@
+# Defaults that apply only when the "leptir" shield is built.
+if SHIELD_LEPTIR
+
+# Name shown in the Bluetooth device list (must be under 16 characters).
+config ZMK_KEYBOARD_NAME
+    default "Leptir"
+
+endif

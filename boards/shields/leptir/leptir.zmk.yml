@@ -1,0 +1,9 @@
+# Metadata describing the shield (used by ZMK tooling, not by the firmware itself).
+file_format: "1"
+id: leptir
+name: Leptir
+type: shield
+url: https://github.com/
+requires: [pro_micro]
+features:
+  - keys

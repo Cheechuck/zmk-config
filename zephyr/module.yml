@@ -1,3 +1,4 @@
+# zephyr/module.yml - lets the build find boards/shields/leptir in this repository.
 build:
   settings:
     board_root: .
